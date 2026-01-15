@@ -1,13 +1,6 @@
-import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 
-export default async function Home() {
-  const session = await auth();
-
-  // Redirect based on authentication status
-  if (session) {
-    redirect("/products");
-  } else {
-    redirect("/login");
-  }
+export default function Home() {
+  // Redirect to products - middleware will handle auth
+  redirect("/products");
 }

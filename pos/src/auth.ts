@@ -1,20 +1,20 @@
-import NextAuth, { type NextAuthConfig } from "next-auth";
+// This file is kept for future use with middleware and getSession calls
+// The actual NextAuth configuration is in src/app/api/auth/[...nextauth]/route.ts
+
+import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
 
-const config: NextAuthConfig = {
+export const authConfig = {
   adapter: PrismaAdapter(prisma),
   providers: [
-    // 🔹 Google Login
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID || "",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
     }),
-
-    // 🔹 Email + Password Login
     Credentials({
       name: "Credentials",
       credentials: {
@@ -54,7 +54,7 @@ const config: NextAuthConfig = {
 
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 30 * 24 * 60 * 60,
   },
 
   pages: {
@@ -82,4 +82,4 @@ const config: NextAuthConfig = {
   debug: process.env.NODE_ENV === "development",
 };
 
-export const { handlers, auth, signIn, signOut } = NextAuth(config);
+export const { auth, signIn, signOut } = NextAuth(authConfig);

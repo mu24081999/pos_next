@@ -1,6 +1,3 @@
-// This file is kept for future use with middleware and getSession calls
-// The actual NextAuth configuration is in src/app/api/auth/[...nextauth]/route.ts
-
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
@@ -8,7 +5,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
 
-export const authConfig = {
+const authConfig = {
   adapter: PrismaAdapter(prisma),
   providers: [
     Google({
@@ -82,4 +79,4 @@ export const authConfig = {
   debug: process.env.NODE_ENV === "development",
 };
 
-export const { auth, signIn, signOut } = NextAuth(authConfig);
+export const { auth } = NextAuth(authConfig);

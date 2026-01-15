@@ -28,3 +28,12 @@ export async function updateProduct(id: string, data: ProductInput) {
   if (!res.ok) throw new Error("Failed to update product");
   return res.json();
 }
+
+export async function deleteProduct(id: string) {
+  const res = await fetch(`/api/products/${id}`, {
+    method: "DELETE",
+  });
+
+  if (!res.ok) throw new Error("Failed to delete product");
+  return res.json();
+}

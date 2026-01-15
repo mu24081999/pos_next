@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import ProductForm from "@/components/products/ProductForm";
 import ProductTable from "@/components/products/ProductTable";
-import { createProduct, updateProduct } from "@/services/products";
+import { createProduct, updateProduct, deleteProduct } from "@/services/products";
 import { syncProducts } from "@/lib/syncProducts";
 import { getLocalProducts } from "@/services/localProducts";
 
@@ -31,6 +31,13 @@ export default function ProductsPage() {
     await load();
   }
 
+  async function handleDelete(product: any) {
+    if (confirm(`Are you sure you want to delete ${product.name}?`)) {
+      await deleteProduct(product.id);
+      await load();
+    }
+  }
+
   return (
     <div className="p-6">
       <div className="flex justify-between">
@@ -46,6 +53,7 @@ export default function ProductsPage() {
           setEditing(p);
           setShowForm(true);
         }}
+        onDelete={handleDelete}
       />
 
       {showForm && (

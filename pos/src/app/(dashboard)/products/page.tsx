@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import ProductForm from "@/components/products/ProductForm";
 import ProductTable from "@/components/products/ProductTable";
 import { createProduct, updateProduct, deleteProduct } from "@/services/products";

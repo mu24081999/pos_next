@@ -3,7 +3,11 @@
 import { useEffect, useState } from "react";
 import ProductForm from "@/components/products/ProductForm";
 import ProductTable from "@/components/products/ProductTable";
-import { createProduct, updateProduct, deleteProduct } from "@/services/products";
+import {
+  createProduct,
+  updateProduct,
+  deleteProduct,
+} from "@/services/products";
 import { syncProducts } from "@/lib/syncProducts";
 import { getLocalProducts } from "@/services/localProducts";
 

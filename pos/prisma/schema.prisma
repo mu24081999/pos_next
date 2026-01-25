@@ -1,97 +1,358 @@
 generator client {
   provider = "prisma-client-js"
+  runtime  = "vercel-edge"
 }
 
 datasource db {
   provider = "postgresql"
 }
 
+/////////////////////
+// USERS & RBAC
+/////////////////////
+
 model User {
-  id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
-  password  String?
-  image     String?
-  role      Role @default(CASHIER)
-  emailVerfied DateTime?
-  createdAt DateTime @default(now())
-  orders    Order[]
-  accounts  Account[]
-  sessions  Session[]  
+  id            String   @id @default(uuid())
+  name          String
+  email         String   @unique
+  password      String?
+  image         String?
+  emailVerified DateTime?
+  createdAt     DateTime @default(now())
+
+  businessUsers BusinessUser[]
+  businesses    Business[]      // ADD THIS
+  orders        Order[]
+  accounts      Account[]
+  sessions      Session[]
 }
 
-model Account {
-  id       String @id @default(uuid())
-  userId   String
-  type     String
-  provider String
-  providerAccountId String
-  refresh_token String?
-  access_token String?
-  expires_at Int?
-  token_type String?
-  scope String?
-  id_token String?
-  session_state String?
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  @@unique([provider, providerAccountId])
-}
+model BusinessUser {
+  id          String   @id @default(uuid())
+  businessId  String
+  userId      String
+  role        Role
 
-model Session {
-  id String @unique @default(uuid())
-  sessionToken String @unique
-  userId String
-  expires DateTime
-  user User @relation(fields:[userId], references: [id], onDelete: Cascade )
-}
+  business    Business @relation(fields: [businessId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
 
-model VerificationToken {
-  identifier String
-  token String @unique
-  expires DateTime
-  @@unique([identifier , token])
-}
+  createdAt   DateTime @default(now())
 
-model Product {
-  id         String      @id
-  sku        String      @unique
-  name       String
-  price      Float
-  cost       Float
-  stock      Int
-  isActive   Boolean     @default(true)
-  updatedAt  DateTime    @updatedAt
-  orderItems OrderItem[]
-}
-
-model Order {
-  id            String        @id
-  total         Float
-  paymentMethod PaymentMethod
-  userId        String
-  syncedAt      DateTime?
-  createdAt     DateTime      @default(now())
-  user          User          @relation(fields: [userId], references: [id])
-  items         OrderItem[]
-}
-
-model OrderItem {
-  id        String  @id
-  orderId   String
-  productId String
-  qty       Int
-  price     Float
-  order     Order   @relation(fields: [orderId], references: [id])
-  product   Product @relation(fields: [productId], references: [id])
+  @@unique([businessId, userId])
 }
 
 enum Role {
+  OWNER
   ADMIN
   CASHIER
+}
+
+/////////////////////
+// BUSINESS & BRANDING
+/////////////////////
+
+model Business {
+  id           String        @id @default(uuid())
+  ownerId      String
+  owner        User          @relation(fields: [ownerId], references: [id])
+
+  name         String
+  businessType BusinessType
+  slug         String        @unique
+  isActive     Boolean       @default(true)
+
+  branding     Branding?
+  products     Product[]
+  categories   Category[]
+  locations    Location[]
+  users        BusinessUser[]
+  orders       Order[]
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+enum BusinessType {
+  PHARMACY
+  AGRICULTURE
+  RETAIL
+  SERVICE
+}
+
+model Branding {
+  id             String   @id @default(uuid())
+  businessId     String   @unique
+  business       Business @relation(fields: [businessId], references: [id])
+
+  logoUrl        String?
+  primaryColor   String?
+  secondaryColor String?
+  domain         String?  @unique
+
+  createdAt      DateTime @default(now())
+}
+
+/////////////////////
+// PRODUCTS
+/////////////////////
+
+model Product {
+  id            String   @id @default(uuid())
+  businessId    String
+  business      Business @relation(fields: [businessId], references: [id])
+
+  sku           String?
+  name          String
+  description   String?
+
+  productType   ProductType
+  unit          String?
+  isExpirable   Boolean  @default(false)
+  isSerialized  Boolean  @default(false)
+  isActive      Boolean  @default(true)
+
+  categoryId    String?
+  category      Category? @relation(fields: [categoryId], references: [id])
+
+  barcodes      ProductBarcode[]
+  prices        ProductPrice[]
+  inventories   Inventory[]
+  batches       ProductBatch[]
+  orderItems    OrderItem[]     // ADD THIS
+
+  pharmacy      PharmacyProduct?
+  agriculture   AgricultureProduct?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([businessId, sku])
+}
+
+enum ProductType {
+  SIMPLE
+  VARIANT
+  SERVICE
+}
+
+model ProductBarcode {
+  id         String   @id @default(uuid())
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id])
+
+  barcode   String
+  type      String?
+  isPrimary Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@unique([barcode, productId])
+  @@index([barcode])
+}
+
+model ProductPrice {
+  id        String   @id @default(uuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+
+  priceType PriceType
+  price     Decimal  @db.Decimal(12,2)
+  currency  String   @default("USD")
+
+  createdAt DateTime @default(now())
+}
+
+enum PriceType {
+  RETAIL
+  WHOLESALE
+  MRP
+}
+
+model Inventory {
+  id         String   @id @default(uuid())
+  productId  String
+  locationId String
+
+  product    Product  @relation(fields: [productId], references: [id])
+  location   Location @relation(fields: [locationId], references: [id])
+
+  quantity   Decimal  @db.Decimal(12,3)
+  minStock   Decimal? @db.Decimal(12,3)
+
+  updatedAt  DateTime @updatedAt
+
+  @@unique([productId, locationId])
+}
+
+model ProductBatch {
+  id            String   @id @default(uuid())
+  productId     String
+  product       Product  @relation(fields: [productId], references: [id])
+
+  batchNumber   String
+  manufactureAt DateTime?
+  expiryAt      DateTime?
+  quantity      Decimal  @db.Decimal(12,3)
+
+  orderItems    OrderItem[]  // ADD THIS
+  createdAt     DateTime @default(now())
+
+  @@unique([productId, batchNumber])
+}
+
+model PharmacyProduct {
+  productId        String  @id
+  product          Product @relation(fields: [productId], references: [id])
+
+  drugSchedule     String?
+  saltComposition  String?
+  prescriptionOnly Boolean @default(false)
+}
+
+model AgricultureProduct {
+  productId       String  @id
+  product         Product @relation(fields: [productId], references: [id])
+
+  cropType        String?
+  season          String?
+  fertilizerGrade String?
+}
+
+model Category {
+  id          String     @id @default(uuid())
+  businessId  String
+  business    Business   @relation(fields: [businessId], references: [id])
+
+  name        String
+  parentId    String?
+  parent      Category? @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryHierarchy")
+
+  products    Product[]
+}
+
+model Location {
+  id         String   @id @default(uuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id])
+
+  name       String
+  type       LocationType
+
+  inventories Inventory[]
+  orders      Order[]      // ADD THIS
+
+  createdAt  DateTime @default(now())
+}
+
+enum LocationType {
+  STORE
+  WAREHOUSE
+  FARM
+}
+
+/////////////////////
+// ORDERS & PAYMENTS
+/////////////////////
+
+model Order {
+  id          String   @id @default(uuid())
+  businessId  String
+  locationId  String
+  cashierId   String
+
+  business    Business @relation(fields: [businessId], references: [id])
+  location    Location @relation(fields: [locationId], references: [id])
+  cashier     User     @relation(fields: [cashierId], references: [id])
+
+  orderNumber String
+  status      OrderStatus
+
+  totalAmount Decimal @db.Decimal(12,2)
+  taxAmount   Decimal @db.Decimal(12,2)
+  discount    Decimal @db.Decimal(12,2)
+
+  items       OrderItem[]
+  payments    Payment[]
+
+  createdAt   DateTime @default(now())
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  CANCELLED
+  REFUNDED
+}
+
+model OrderItem {
+  id          String   @id @default(uuid())
+  orderId     String
+  productId   String
+  batchId     String?
+
+  order       Order    @relation(fields: [orderId], references: [id])
+  product     Product  @relation(fields: [productId], references: [id])
+  batch       ProductBatch? @relation(fields: [batchId], references: [id])
+
+  productName String
+  unitPrice   Decimal  @db.Decimal(12,2)
+  quantity    Decimal  @db.Decimal(12,3)
+  totalPrice  Decimal  @db.Decimal(12,2)
+}
+
+model Payment {
+  id        String   @id @default(uuid())
+  orderId   String
+  method    PaymentMethod
+  amount    Decimal  @db.Decimal(12,2)
+  reference String?
+
+  order     Order    @relation(fields: [orderId], references: [id])
+
+  createdAt DateTime @default(now())
 }
 
 enum PaymentMethod {
   CASH
   CARD
-  QR
+  ONLINE
+  WALLET
+}
+
+/////////////////////
+// NEXTAUTH MODELS
+/////////////////////
+
+model Account {
+  id                 String @id @default(uuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?
+  access_token       String?
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?
+  session_state      String?
+  user               User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+  @@unique([identifier , token])
 }

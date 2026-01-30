@@ -45,7 +45,6 @@ export const printProductLabel = (product: Product, copies: number = 1) => {
   }
 
   const html = `
-    <!DOCTYPE html>
     <html>
     <head>
       <title>Print - ${product.sku}</title>
@@ -101,7 +100,6 @@ export const printMultipleLabels = (products: Product[], copiesPerProduct: numbe
   }
 
   const html = `
-    <!DOCTYPE html>
     <html>
     <head>
       <title>Print Labels</title>
@@ -271,7 +269,6 @@ export const supportsHardwarePrinting = (): boolean => {
  */
 export const getPrintableProductsHTML = (products: Product[]): string => {
   return `
-    <!DOCTYPE html>
     <html>
     <head>
       <title>Products Inventory Report</title>

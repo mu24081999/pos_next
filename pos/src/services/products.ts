@@ -13,6 +13,7 @@ export async function createProduct(data: ProductInput) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
+  console.log(res);
 
   if (!res.ok) throw new Error("Failed to create product");
   return res.json();
